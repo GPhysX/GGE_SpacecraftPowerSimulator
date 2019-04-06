@@ -1,5 +1,6 @@
 classdef Bateria
     properties
+        phi_max
         r_c
         r_d
         coeficientes_descarga_tipo1
@@ -49,7 +50,65 @@ classdef Bateria
             v2 = ed - r_d .* i;
             fer = norm((v2 - v) .* pesos) / sqrt(sum(pesos));
         end
-
+        
+        function table = datos_carga_a_vector(archivo, head_trim, tail_trim)
+            a = load(archivo, "-ascii");
+            
+            %% Size of table
+            %n = size(a(:,1));
+            m = size(a(:,2)) / 3;
+            
+            %% Extract vectors
+            ts = a(:,1:3:end);
+            is = a(:,2:3:end);
+            vs = a(:,3:3:end);
+            
+            %%
+            l = 0;
+            v_vec = [];
+            i_vec = [];
+            phi1_vec = [];
+            phi2_vec = [];
+            t_vec = [];
+            
+            for j = 1:m
+                tmp_t = t_vec;
+                tmp_i = i_vec;
+                tmp_v = v_vec;
+                tmp_p1 = phi1_vec;
+                tmp_p2 = phi2_vec;
+                
+                i_max = max(is(:,j));
+                subindxs = abs(is(:,j) - i_max) < 1e-3;
+                n_i = sum(subindxs) - head_trim - tail_trim;
+                l = l + n_i;
+                
+                t2 = ts(subindxs, j);
+                i2 = is(subindxs, j);
+                v2 = vs(subindxs, j);
+                
+                t2 = t2(head_trim:(end-tail_trim));
+                i2 = i2(head_trim:(end-tail_trim));
+                v2 = v2(head_trim:(end-tail_trim));
+                
+                [p12, p22] = Bateria().get_phies (t2, i2, v2);
+                
+                t_vec = zeros(l,1);
+                i_vec = zeros(l,1);
+                v_vec = zeros(l,1);
+                phi1_vec = zeros(l,1);
+                phi2_vec = zeros(l,1);
+                
+                t_vec(1:l,1) = [tmp_t, t2];
+                i_vec(1:l,1) = [tmp_i, v2];
+                v_vec(1:l,1) = [tmp_v, i2];
+                phi1_vec(1:l,1) = [tmp_p1, p12];
+                phi2_vec(1:l,1) = [tmp_p2, p22];
+            end
+            
+            table = [t_vec; i_vec; v_vec; phi1_vec; phi2_vec];
+                
+        end
     end
     
     methods
@@ -169,6 +228,8 @@ classdef Bateria
                     obj.coeficientes_descarga_tipo1 = u(1:2);
                     obj.r_d = u(3);
                 end
+                
+                obj.phi_max = max(phi1_vec + obj.r_d * phi2_vec);
             end
         end
         
@@ -203,6 +264,10 @@ classdef Bateria
                 u0 = [coefs(1), coefs(2), coefs(3)/3e0, coefs(3)/15e0, coefs(3)/75e0, coefs(4)/2e0, coefs(4)/10e0, bateria.r_d];
                 obj = obj.ajuste_coeficientes_descarga(archivo, 3, u0);
             end
+        end
+        
+        function obj = ajuste_coeficiente_carga(obj, archivo, tipo, u0)
+            a = Bateria().datos_carga_a_vector(archivo, 3, 3);
         end
     end
 end
