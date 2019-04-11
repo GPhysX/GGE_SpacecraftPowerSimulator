@@ -6,7 +6,9 @@ classdef Bateria
         coeficientes_descarga_tipo1
         coeficientes_descarga_tipo2
         coeficientes_descarga_tipo3
-        coefs_e_d_t3
+        coeficientes_carga_tipo1
+        coeficientes_carga_tipo2
+        coeficientes_carga_tipo3
         coefs_e_c
     end
     
@@ -51,12 +53,36 @@ classdef Bateria
             fer = norm((v2 - v) .* pesos) / sqrt(sum(pesos));
         end
         
+        function fer = modelo_estatico_carga_tipo1 (pesos, v, i, phi1, phi2, e0, e1, r_c, phi0)
+            f_ed = @(phi) e0 - e1 * phi;
+            phi = phi0 - phi1 + r_c * phi2;
+            ed = f_ed(phi);
+            v2 = ed + r_c .* i;
+            fer = norm((v2 - v) .* pesos) / sqrt(sum(pesos));
+        end
+        
+        function fer = modelo_estatico_carga_tipo2 (pesos, v, i, phi1, phi2, e0, e1, e2, e3, r_c, phi0)
+            f_ed = @(phi) e0 - e1 * phi - e2 * exp(e3 * phi);
+            phi = phi0 - phi1 + r_c * phi2;
+            ed = f_ed(phi);
+            v2 = ed + r_c .* i;
+            fer = norm((v2 - v) .* pesos) / sqrt(sum(pesos));
+        end
+        
+        function fer = modelo_estatico_carga_tipo3 (pesos, v, i, phi1, phi2, e0, e1, e2, e30, e31, r_c, phi0)
+            f_ed = @(phi) e0 - e1 * phi - e2 * exp((e30 + e31 * i) .* phi);
+            phi = phi0 - phi1 + r_c * phi2;
+            ed = f_ed(phi);
+            v2 = ed + r_c .* i;
+            fer = norm((v2 - v) .* pesos) / sqrt(sum(pesos));
+        end
+        
         function table = datos_carga_a_vector(archivo, head_trim, tail_trim)
             a = load(archivo, "-ascii");
             
             %% Size of table
             %n = size(a(:,1));
-            m = size(a(:,2)) / 3;
+            m = size(a, 2) / 3;
             
             %% Extract vectors
             ts = a(:,1:3:end);
@@ -70,6 +96,7 @@ classdef Bateria
             phi1_vec = [];
             phi2_vec = [];
             t_vec = [];
+            pesos_vec = [];
             
             for j = 1:m
                 tmp_t = t_vec;
@@ -77,6 +104,7 @@ classdef Bateria
                 tmp_v = v_vec;
                 tmp_p1 = phi1_vec;
                 tmp_p2 = phi2_vec;
+                tmp_w = pesos_vec;
                 
                 i_max = max(is(:,j));
                 subindxs = abs(is(:,j) - i_max) < 1e-3;
@@ -87,9 +115,10 @@ classdef Bateria
                 i2 = is(subindxs, j);
                 v2 = vs(subindxs, j);
                 
-                t2 = t2(head_trim:(end-tail_trim));
-                i2 = i2(head_trim:(end-tail_trim));
-                v2 = v2(head_trim:(end-tail_trim));
+                t2 = t2((head_trim+1):(end-tail_trim));
+                i2 = i2((head_trim+1):(end-tail_trim));
+                v2 = v2((head_trim+1):(end-tail_trim));
+                w2 = ones(length(t2),1) * n_i;
                 
                 [p12, p22] = Bateria().get_phies (t2, i2, v2);
                 
@@ -98,15 +127,19 @@ classdef Bateria
                 v_vec = zeros(l,1);
                 phi1_vec = zeros(l,1);
                 phi2_vec = zeros(l,1);
+                pesos_vec = zeros(l,1);
                 
-                t_vec(1:l,1) = [tmp_t, t2];
-                i_vec(1:l,1) = [tmp_i, v2];
-                v_vec(1:l,1) = [tmp_v, i2];
-                phi1_vec(1:l,1) = [tmp_p1, p12];
-                phi2_vec(1:l,1) = [tmp_p2, p22];
+                t_vec(1:l,1) = [tmp_t; t2];
+                i_vec(1:l,1) = [tmp_i; i2];
+                v_vec(1:l,1) = [tmp_v; v2];
+                phi1_vec(1:l,1) = [tmp_p1; p12];
+                phi2_vec(1:l,1) = [tmp_p2; p22];
+                pesos_vec(1:l,1) = [tmp_w; w2];
             end
             
-            table = [t_vec; i_vec; v_vec; phi1_vec; phi2_vec];
+            pesos_vec = 1e0 ./ pesos_vec;
+            pesos_vec = pesos_vec / norm(pesos_vec);
+            table = [t_vec, i_vec, v_vec, phi1_vec, phi2_vec, pesos_vec];
                 
         end
     end
@@ -266,8 +299,73 @@ classdef Bateria
             end
         end
         
-        function obj = ajuste_coeficiente_carga(obj, archivo, tipo, u0)
+        function obj = ajuste_coeficiente_carga_tipo1(obj, archivo)
             a = Bateria().datos_carga_a_vector(archivo, 3, 3);
+            %t_vec = a(:,1);
+            i_vec = a(:,2);
+            v_vec = a(:,3);
+            phi1_vec = a(:,4);
+            phi2_vec = a(:,5);
+            pesos = a(:,6);
+                        
+            ff = @(u) obj.modelo_estatico_carga_tipo1(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u(1), u(2), u(3), obj.phi_max);
+            lb = [0e0, 0e0, 0e0];
+            ub = [1e3, 1e0, 1e3];
+            [u, fer] = fmincon(ff, [0e0, 1e0, 0e0],[],[],[],[],lb,ub);
+            
+            disp(fer);
+            
+            phis = obj.phi_max - phi1_vec + u(3)*phi2_vec;
+            scatter(phis, u(1) + u(2) * phis + u(3) .* i_vec );
+            
+            obj.r_c = u(3);
+            obj.coeficientes_carga_tipo1 = u(1:2);
+        end
+        
+        function obj = ajuste_coeficiente_carga_tipo2(obj, archivo)
+            a = Bateria().datos_carga_a_vector(archivo, 3, 3);
+            %t_vec = a(:,1);
+            i_vec = a(:,2);
+            v_vec = a(:,3);
+            phi1_vec = a(:,4);
+            phi2_vec = a(:,5);
+            pesos = a(:,6);
+            
+            obj = obj.ajuste_coeficiente_carga_tipo1(archivo);
+            u0 = [obj.coeficientes_carga_tipo1, 1e-8, 1e-4, obj.r_c];
+                        
+            ff = @(u) obj.modelo_estatico_carga_tipo2(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u(1), u(2), u(3), u(4), u(5), obj.phi_max);
+            lb = [0e0, 0e0, 0e0, -1e2, 0e0];
+            ub = [1e3, 1e0, 1e0,  1e2, 1e3];
+            [u, fer] = fmincon(ff, u0,[],[],[],[],lb,ub);
+            
+            disp(fer);
+            
+            obj.r_c = u(5);
+            obj.coeficientes_carga_tipo2 = u(1:4);
+        end
+        
+        function obj = ajuste_coeficiente_carga_tipo3(obj, archivo)
+            a = Bateria().datos_carga_a_vector(archivo, 3, 3);
+            %t_vec = a(:,1);
+            i_vec = a(:,2);
+            v_vec = a(:,3);
+            phi1_vec = a(:,4);
+            phi2_vec = a(:,5);
+            pesos = a(:,6);
+            
+            obj = obj.ajuste_coeficiente_carga_tipo2(archivo);
+            u0 = [obj.coeficientes_carga_tipo2(1:3), obj.coeficientes_carga_tipo2(4)/2e0, obj.coeficientes_carga_tipo2(4)/1e1, obj.r_c];
+                        
+            ff = @(u) obj.modelo_estatico_carga_tipo3(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u(1), u(2), u(3), u(4), u(5), u(6), obj.phi_max);
+            lb = [0e0, 0e0, 0e0, -1e2, -1e2, 0e0];
+            ub = [1e3, 1e0, 1e0,  1e2,  1e2, 1e3];
+            [u, fer] = fmincon(ff, u0,[],[],[],[],lb,ub);
+            
+            disp(fer);
+            
+            obj.r_c = u(6);
+            obj.coeficientes_carga_tipo3 = u(1:5);
         end
     end
 end

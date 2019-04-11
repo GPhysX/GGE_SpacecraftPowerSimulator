@@ -77,6 +77,7 @@ classdef Examples
     function [bateria] = ex_bateria_ajuste ()
         bateria = Bateria();
         bateria = bateria.ajuste_coeficientes_descarga_tipo3("data/ensayos_modulo_3s1p_descarga.dat");
+        bateria = bateria.ajuste_coeficiente_carga_tipo3("data/ensayos_modulo_3s1p_carga.dat");
     end
   end
   
