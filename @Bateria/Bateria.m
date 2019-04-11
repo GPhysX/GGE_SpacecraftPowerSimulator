@@ -3,6 +3,11 @@ classdef Bateria
         phi_max
         r_c
         r_d
+        r_int
+        r_1
+        r_2
+        c_1
+        c_2
         coeficientes_descarga_tipo1
         coeficientes_descarga_tipo2
         coeficientes_descarga_tipo3
@@ -151,6 +156,24 @@ classdef Bateria
             obj.coeficientes_descarga_tipo1 = zeros(1,2);
             obj.coeficientes_descarga_tipo2 = zeros(1,4);
             obj.coeficientes_descarga_tipo3 = zeros(1,7);
+        end
+        
+        function e_d = voltaje_pila_descarga(obj, phi, i)
+            c_e_d = obj.coeficientes_descarga_tipo3;
+            e0 = c_e_d(1);
+            e1 = c_e_d(2);
+            e2 = dot(c_e_d(3:5), [i .^ 0e0, i .^ 1e0, i .^ 2e0]);
+            e3 = dot(c_e_d(6:7), [i .^ 0e0, i .^ 1e0]);
+            e_d = e0 + e1 * phi + e2 .* exp(e3 .* phi);
+        end
+        
+        function e_c = voltaje_pila_carga(obj, phi, i)
+            c_e_c = obj.coeficientes_carga_tipo3;
+            e0 = c_e_c(1);
+            e1 = c_e_c(2);
+            e2 = c_e_c(3);
+            e3 = dot(c_e_d(4:5), [i .^ 0e0, i .^ 1e0]);
+            e_c = e0 - e1 * phi - e2 .* exp(e3 .* phi);
         end
         
         function obj = ajuste_coeficientes_descarga(obj, archivo, tipo, u0)
@@ -366,6 +389,29 @@ classdef Bateria
             
             obj.r_c = u(6);
             obj.coeficientes_carga_tipo3 = u(1:5);
+        end
+        
+        function fer = modelo_dinamico(obj, t, i, v, r_1, r_2, c_1, c_2)
+            phi0 = 0e0;
+            [phi1, phi2] = obj.get_phies (t, i, v);
+            e_d = obj.voltaje_pila_descarga(phi0 + phi1 * obj.r_d + phi2, i);
+            e_c = obj.voltaje_pila_carga(phi0 - phi1 * obj.r_c + phi2, i);
+            de = e_c - e_d;
+            dr = obj.r_c - obj.r_d;
+            v_estatico = e_d + (1e0 - sign(i)) / 2e0 * (de - dr * i) - (obj.r_d - r_1 -r_2) * i;
+            
+            f_i = @(j) i(j); 
+            dv1_dt = @(y, j) (r_1 * f_i(j) - y) / (r_1 * c_1);
+            n = length(t);
+            v1s = zeros(n, 1);
+            v2s = zeros(n, 1);
+            
+            for j = 1:n
+                v1s(j+1) = v1s(j) + (t(j+1)-t(j)) * (r_1 * i(j) - v1s(j)) / (r_1 * c_1);
+                v2s(j+1) = v2s(j) + (t(j+1)-t(j)) * (r_2 * i(j) - v2s(j)) / (r_2 * c_2);
+            end
+            
+            v_dinamico = v_estatico - v1s - v2s;
         end
     end
 end
