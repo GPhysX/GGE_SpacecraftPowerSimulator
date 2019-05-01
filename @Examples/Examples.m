@@ -75,9 +75,37 @@ classdef Examples
     end
     
     function [bateria] = ex_bateria_ajuste ()
-        bateria = Bateria();
-        bateria = bateria.ajuste_coeficientes_descarga_tipo3("data/ensayos_modulo_3s1p_descarga.dat");
-        bateria = bateria.ajuste_coeficiente_carga_tipo3("data/ensayos_modulo_3s1p_carga.dat");
+        bateria = BateriaEstatica();
+        bateria = bateria.adjust_discharge("data/ensayos_modulo_3s1p_descarga.dat", 3);
+        bateria = bateria.adjust_charge("data/ensayos_modulo_3s1p_carga.dat", 3);
+        bateria = BateriaDinamica(bateria);
+        bateria = bateria.adjust_dynamic("data/medidas_bateria.dat", 3);
+        
+        tabla = bateria.datos_carga_a_vector("data/ensayos_modulo_3s1p_descarga.dat", 10, 10);
+        phi2 = tabla(:,4) + bateria.r_d * tabla(:,5);
+        phi = linspace(0e0, max(phi2), 20);
+        v_vec = tabla(:,3);
+        figure();
+        hold on;
+        grid on;
+        plot(phi, bateria.discharge_voltage(phi, 5e0, 3), "r-x");
+        plot(phi, bateria.discharge_voltage(phi, 2.5e0, 3), "r-+");
+        plot(phi, bateria.discharge_voltage(phi, 1.5e0, 3), "rd-");
+        plot(phi2,v_vec);
+        legend();
+        
+        tabla = bateria.datos_carga_a_vector("data/ensayos_modulo_3s1p_carga.dat", 10, 10);
+        phi2 = bateria.phi_max - tabla(:,4) + bateria.r_c * tabla(:,5);
+        phi = linspace(0e0, bateria.phi_max, 20);
+        v_vec = tabla(:,3);
+        figure();
+        hold on;
+        grid on;
+        plot(phi, bateria.charge_voltage(phi, 5e0, 3), "r-x");
+        plot(phi, bateria.charge_voltage(phi, 2.5e0, 3), "r-+");
+        plot(phi, bateria.charge_voltage(phi, 1.5e0, 3), "rd-");
+        plot(phi2,v_vec);
+        legend();
     end
   end
   

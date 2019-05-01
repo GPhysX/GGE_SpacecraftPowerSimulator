@@ -1,15 +1,8 @@
-classdef Bateria
+classdef BateriaEstatica
     properties
         phi_max
         r_c
         r_d
-        r_int
-        r_1
-        r_2
-        c_1
-        c_2
-        i_r1
-        i_r2
         coeficientes_descarga_tipo1
         coeficientes_descarga_tipo2
         coeficientes_descarga_tipo3
@@ -133,61 +126,6 @@ classdef Bateria
     end
     
     methods(Static = true, Access = public)
-        %% DYNAMIC
-        
-        function f = dynamic_model_diff(y, t, i_interp, r1, r2, c1, c2, bateria_est)
-            f = zeros(1,3);
-            phi = y(1);
-            i12 = y(2);
-            i22 = y(3);
-            
-            i = i_interp.eval(t);
-            
-            v_est = bateria_est.voltage_static(phi, i, 3);
-            e = v_est - i * (r1 + r2);
-
-            f(1) = e * i;
-            f(2) = (i - i12) / (r1 * c1);
-            f(3) = (i - i22) / (r2 * c2);
-        end
-        
-        function fer = minimize_dynamic_model(u, time, i_exp, v_exp, bateria_est)
-            r1 = u(1);
-            r2 = u(2);
-            c1 = u(3);
-            c2 = u(4);
-
-            y0 = [0e0, 0e0, 0e0];
-            t0 = time(1);
-
-            i_interp = Interpolator(time, i_exp);
-            f_diff = @(y,t) Bateria.dynamic_model_diff(y, t, i_interp, r1, r2, c1, c2, bateria_est);
-            rk = RK4(f_diff, y0, t0);
-
-            n = length(time);
-            v_sim = ones(n,1) * v_exp(1);
-            for k = 2:n             
-              dt = time(k) - time(k-1);
-              rk = rk.next(dt);
-              phi = rk.y(1);
-              i12 = rk.y(2);
-              i22 = rk.y(3);
-              obj.i_r1 = i12;
-              obj.i_r2 = i22;
-              i = i_interp.eval(time(k));
-              v_est = bateria_est.voltage_static(phi, i, 3);
-              v_sim(k) = v_est - i * (r1 + r2) - i12 * r1 - i22 * r2;
-            end
-            close all;
-            figure();
-            hold on;
-            plot(v_sim);
-            plot(v_exp);
-            fer = bateria_est.p_rmsd(v_exp, v_sim, ones(length(v_exp), 1));
-        end
-    end
-    
-    methods(Static = true, Access = public)
       %% AUX
       function rmsd = p_rmsd(v_exp, v_sim, w)
         % _rmsd RMSD function with weights.
@@ -239,6 +177,10 @@ classdef Bateria
               i2 = i2((head_trim+1):(end-tail_trim));
               v2 = v2((head_trim+1):(end-tail_trim));
               w2 = ones(length(t2),1) * n_i;
+              %% WARNING
+              w2(round(90e-2 * length(t2)):length(t2)) = n_i * 1e-4;
+              w2(round(40e-2 * length(t2)):round(60e-2 * length(t2))) = n_i * 1e-2;
+              w2(round(40e-2 * length(t2)):round(60e-2 * length(t2))) = n_i * 1e-2;
               
               [p12, p22] = Bateria().get_phies (t2, i2, v2);
               
@@ -256,9 +198,12 @@ classdef Bateria
               phi2_vec(1:l,1) = [tmp_p2; p22];
               pesos_vec(1:l,1) = [tmp_w; w2];
           end
-          
+          figure();
+          plot(pesos_vec);
           pesos_vec = 1e0 ./ pesos_vec;
-          pesos_vec = pesos_vec / norm(pesos_vec);
+          figure();
+          plot(pesos_vec);
+          %pesos_vec = pesos_vec / norm(pesos_vec);
           table = [t_vec, i_vec, v_vec, phi1_vec, phi2_vec, pesos_vec];
               
       end
@@ -266,7 +211,7 @@ classdef Bateria
     
     methods
     %% CONSTRUCTOR
-      function obj = Bateria()
+      function obj = BateriaEstatica()
         obj.r_c = 0e0;
         obj.r_d = 0e0;
         obj.coeficientes_descarga_tipo1 = zeros(1,2);
@@ -307,6 +252,9 @@ classdef Bateria
           phi2_vec = a(:,5);
           pesos = a(:,6);
           
+          figure()
+          plot(pesos);
+          
           ff = @(u) obj.p_rmsd_discharge_voltage(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u, u(end), t);
           
           if ( t == 1 )
@@ -325,9 +273,10 @@ classdef Bateria
             u0 = [obj.coeficientes_descarga_tipo2(1), obj.coeficientes_descarga_tipo2(2), -1e-8, -1e-8, -1e-8, 1e-3, -1e-8, obj.r_d];
           end
           %[u, fer] = fmincon(ff, u0,[],[],[],[],lb,ub);
-          [u, fer] = fminsearch(ff, u0);
+          options = optimset("Display", "iter", "Tolx", 1e-6, "Tolfun", 1e-6);
+          [u, fer] = fminsearch(ff, u0, options);
           
-          disp(fer);
+          %disp(fer);
           
           %phis = obj.phi_max - phi1_vec + u(3)*phi2_vec;
           %scatter(phis, u(1) + u(2) * phis + u(3) .* i_vec );
@@ -535,7 +484,7 @@ classdef Bateria
       end
       
       function v_c = charge_voltage(obj, phi, i, t)
-          e_c = obj.battery_charge_voltage(phi, abs(i), t);
+          e_c = obj.battery_charge_voltage(phi, i, t);
           v_c = e_c + i * obj.r_c;
       end
       
@@ -597,9 +546,26 @@ classdef Bateria
                 tt = t;
             end
             if ( i > 0e0 )
-                v_est = obj.discharge_voltage(phi, i, tt);
+                %v_est = obj.discharge_voltage(phi, i, tt);
+                e_d = obj.battery_discharge_voltage(phi, i, tt);
+                v_est = e_d - i * obj.r_d;
             else
-                v_est = obj.charge_voltage(phi, i, tt);
+                e_c = obj.battery_charge_voltage(phi, -i, tt);
+                v_est = e_c - i * obj.r_c;
+            end
+        end
+        
+        function e = battery_voltage_static(obj, phi, i, t)
+            if ( nargin == 3 )
+                tt = 3;
+            else
+                tt = t;
+            end
+            if ( i > 0e0 )
+                %v_est = obj.discharge_voltage(phi, i, tt);
+                e = obj.battery_discharge_voltage(phi, i, tt);
+            else
+                e = obj.battery_charge_voltage(phi, -i, tt);
             end
         end
         
@@ -607,42 +573,7 @@ classdef Bateria
     
     methods
       %% DYNAMIC
-      
-      function v_din = voltage_dynamic(obj, phi, i, t)
-          v_est = obj.voltage_static(phi, i, t);
-          e = v_est + i * (obj.r_1 + obj.r_2);
-          v_din = e - obj.i_r1 * obj.r_1 - obj.i_r2 * obj.r_2;
-      end
-      
-     
-      
-      function obj = adjust_dynamic(obj, archivo, t)
-          a = load(archivo);
-          tE = a(:,1);
-          vE = a(:,2);
-          iE = a(:,3);
-          
-          u0 = [+6e-2, +6e-2, +1e+3, +1.4e+3];
-          options = optimset('Display', 'iter', 'MaxFunEvals', 100);
-          f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj);
-          x = fminsearch(f,u0,options);
-          
-          obj.r_1 = x(1);
-          obj.r_2 = x(2);
-          obj.c_1 = x(3);
-          obj.c_2 = x(4);
-      end
-      
-      function v_estatico = modelo_dinamico(obj, t, i, v, r_1, r_2)
-          phi0 = 0e0;
-          [phi1, phi2] = obj.get_phies (t, i, v);
-          e_d = obj.voltaje_pila_descarga(phi0 + phi1 * obj.r_d + phi2, i);
-          e_c = obj.voltaje_pila_carga(phi0 - phi1 * obj.r_c + phi2, i);
-          de = e_c - e_d;
-          dr = obj.r_c - obj.r_d;
-          v_estatico = e_d + (1e0 - sign(i)) / 2e0 * (de - dr * i) - (obj.r_d - r_1 -r_2) * i;
-      end
-      
+
       function v_estatico = modelo_estatico(obj, phi, i, r_1, r_2)
           if sign(i) > 0e0
               e_d = obj.voltaje_pila_descarga(phi, i);
