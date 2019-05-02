@@ -75,7 +75,7 @@ classdef Examples
     end
     
     function [bateria] = ex_bateria_ajuste ()
-        bateria = BateriaEstatica();
+        bateria = BateriaEstatica(3, 1);
         bateria = bateria.adjust_discharge("data/ensayos_modulo_3s1p_descarga.dat", 3);
         bateria = bateria.adjust_charge("data/ensayos_modulo_3s1p_carga.dat", 3);
         bateria = BateriaDinamica(bateria);
@@ -106,6 +106,8 @@ classdef Examples
         plot(phi, bateria.charge_voltage(phi, 1.5e0, 3), "rd-");
         plot(phi2,v_vec);
         legend();
+        
+        bateria = bateria.change_series(6);
     end
   end
   

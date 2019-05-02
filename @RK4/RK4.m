@@ -35,6 +35,7 @@ classdef RK4
             k3 = obj.f(obj.y + dt / 2e0 * k2, obj.t + dt / 2e0);
             k4 = obj.f(obj.y + dt * k3, obj.t + dt);
             obj.y = obj.y + dt / 6e0 * (k1 + 2e0 * k2 + 2e0 * k3 + k4);
+            obj.y;
             obj.t = obj.t + dt;
             obj.iter = obj.iter + 1;
         end

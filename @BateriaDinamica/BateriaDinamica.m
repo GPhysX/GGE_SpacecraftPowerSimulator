@@ -18,8 +18,9 @@ classdef BateriaDinamica < BateriaEstatica
             if ( i > 0e0 )
                 v_int = e - rint * i;
             else
-                v_int = e - (rint - rsc) * i;
+                v_int = e - (rint + rsc) * i;
             end
+            v_int;
         end
         
         function v_din = p_voltage_dynamic(bateria_est, phi, i, ir1, ir2, rsc, rint, r1, r2, t)
@@ -28,7 +29,7 @@ classdef BateriaDinamica < BateriaEstatica
         end
         
         function f = dynamic_model_diff(y, t, i_interp, rsc, rint, r1, r2, c1, c2, bateria_est, tp)
-            f = zeros(1,3);
+            f = zeros(3,1);
             phi = y(1);
             i12 = y(2);
             i22 = y(3);
@@ -50,11 +51,11 @@ classdef BateriaDinamica < BateriaEstatica
             r2 = u(4);
             c1 = u(5);
             c2 = u(6);
-
-            y0 = [0e0, 0e0, 0e0];
+            
             t0 = time(1);
-
             i_interp = Interpolator(time, i_exp);
+            i0 = i_interp.eval(t0);
+            y0 = [0e0; i0; i0];
             f_diff = @(y,t) BateriaDinamica.dynamic_model_diff(y, t, i_interp, rsc, rint, r1, r2, c1, c2, bateria_est, tp);
             rk = RK4(f_diff, y0, t0);
 
@@ -85,6 +86,7 @@ classdef BateriaDinamica < BateriaEstatica
     methods
     %% CONSTRUCTOR
       function obj = BateriaDinamica(bateria_est)
+        obj@BateriaEstatica(bateria_est.s, bateria_est.p); 
         obj.r_c = bateria_est.r_c;
         obj.r_d = bateria_est.r_d;
         obj.phi_max = bateria_est.phi_max;

@@ -1,5 +1,8 @@
 classdef BateriaEstatica
     properties
+        s
+        p
+        m_s
         phi_max
         r_c
         r_d
@@ -198,11 +201,11 @@ classdef BateriaEstatica
               phi2_vec(1:l,1) = [tmp_p2; p22];
               pesos_vec(1:l,1) = [tmp_w; w2];
           end
-          figure();
-          plot(pesos_vec);
+          %figure();
+          %plot(pesos_vec);
           pesos_vec = 1e0 ./ pesos_vec;
-          figure();
-          plot(pesos_vec);
+          %figure();
+          %plot(pesos_vec);
           %pesos_vec = pesos_vec / norm(pesos_vec);
           table = [t_vec, i_vec, v_vec, phi1_vec, phi2_vec, pesos_vec];
               
@@ -211,13 +214,25 @@ classdef BateriaEstatica
     
     methods
     %% CONSTRUCTOR
-      function obj = BateriaEstatica()
+      function obj = BateriaEstatica(s, p)
+        obj.s = s;
+        obj.p = p;
+        obj.m_s = 1e0;
         obj.r_c = 0e0;
         obj.r_d = 0e0;
         obj.coeficientes_descarga_tipo1 = zeros(1,2);
         obj.coeficientes_descarga_tipo2 = zeros(1,4);
         obj.coeficientes_descarga_tipo3 = zeros(1,7);
       end
+    end
+    
+    methods
+      %% OPERATIONS
+      function obj = change_series(obj, s)
+        obj.m_s = s * 1e0 / obj.s;
+        obj.s = s;
+      end
+      
     end
     
     methods
@@ -236,6 +251,8 @@ classdef BateriaEstatica
             e_d_coefs = obj.coeficientes_descarga_tipo3;
         end
         e_d = obj.p_battery_discharge_voltage(phi, i, e_d_coefs, tt);
+        %% WARNING
+        e_d = e_d * obj.m_s;
       end
       
       function v_d = discharge_voltage(obj, phi, i, t)
@@ -252,8 +269,8 @@ classdef BateriaEstatica
           phi2_vec = a(:,5);
           pesos = a(:,6);
           
-          figure()
-          plot(pesos);
+          %figure()
+          %plot(pesos);
           
           ff = @(u) obj.p_rmsd_discharge_voltage(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u, u(end), t);
           
@@ -481,6 +498,8 @@ classdef BateriaEstatica
             e_c_coefs = obj.coeficientes_carga_tipo3;
         end
         e_c = obj.p_battery_charge_voltage(phi, i, e_c_coefs, tt);
+        %% WARNING
+        e_c = e_c * obj.m_s;
       end
       
       function v_c = charge_voltage(obj, phi, i, t)

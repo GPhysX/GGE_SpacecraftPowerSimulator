@@ -1,5 +1,6 @@
 close all
 clc
+plots = true;
 
 %% Conversor 5V
 a = load("data/conversor_5V.dat", "-ascii");
@@ -15,13 +16,15 @@ v_in = vec_v_in(1);
 v_out = vec_v_out(1);
 
 conversor_5v = ConversorDC(v_in, v_out);
-conversor_5v = conversor_5v.ajuste(vec_i_in, vec_eta);
+conversor_5v = conversor_5v.ajuste(vec_i_out, vec_eta);
 
-figure();
-hold on;
-plot(vec_i_in, vec_i_out, 'DisplayName', 'Experimental');
-plot(vec_i_in, conversor_5v.corriente_salida(vec_i_in), 'DisplayName', 'Simulado');
-legend();
+if ( plots )
+  figure();
+  hold on;
+  plot(vec_i_in, vec_i_in, 'DisplayName', 'Experimental');
+  plot(vec_i_in, conversor_5v.corriente_entrada(vec_i_out), 'DisplayName', 'Simulado');
+  legend();
+end
 
 %% Conversor 15V
 a = load("data/conversor_15V.dat", "-ascii");
@@ -37,13 +40,15 @@ v_in = vec_v_in(1);
 v_out = vec_v_out(1);
 
 conversor_15v = ConversorDC(v_in, v_out);
-conversor_15v = conversor_15v.ajuste(vec_i_in, vec_eta);
+conversor_15v = conversor_15v.ajuste(vec_i_out, vec_eta);
 
-figure();
-hold on;
-plot(vec_i_in, vec_i_out, 'DisplayName', 'Experimental');
-plot(vec_i_in, conversor_15v.corriente_salida(vec_i_in), 'DisplayName', 'Simulado');
-legend();
+if ( plots )
+  figure();
+  hold on;
+  plot(vec_i_in, vec_i_in, 'DisplayName', 'Experimental');
+  plot(vec_i_in, conversor_15v.corriente_entrada(vec_i_out), 'DisplayName', 'Simulado');
+  legend();
+end
 
 %% Conversor 3_3V
 a = load("data/conversor_3.3V.dat", "-ascii");
@@ -59,10 +64,12 @@ v_in = vec_v_in(1);
 v_out = vec_v_out(1);
 
 conversor_3_3v = ConversorDC(v_in, v_out);
-conversor_3_3v = conversor_3_3v.ajuste(vec_i_in, vec_eta);
+conversor_3_3v = conversor_3_3v.ajuste(vec_i_out, vec_eta);
 
-figure();
-hold on;
-plot(vec_i_in, vec_i_out, 'DisplayName', 'Experimental');
-plot(vec_i_in, conversor_3_3v.corriente_salida(vec_i_in), 'DisplayName', 'Simulado');
-legend();
+if ( plots )
+  figure();
+  hold on;
+  plot(vec_i_in, vec_i_in, 'DisplayName', 'Experimental');
+  plot(vec_i_in, conversor_3_3v.corriente_entrada(vec_i_out), 'DisplayName', 'Simulado');
+  legend();
+end
