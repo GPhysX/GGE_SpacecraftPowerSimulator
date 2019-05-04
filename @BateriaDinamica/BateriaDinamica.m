@@ -61,7 +61,7 @@ classdef BateriaDinamica < BateriaEstatica
 
             n = length(time);
             v_sim = ones(n,1) * v_exp(1);
-            for k = 2:n             
+            for k = 2:n
               dt = time(k) - time(k-1);
               rk = rk.next(dt);
               phi = rk.y(1);
@@ -74,11 +74,33 @@ classdef BateriaDinamica < BateriaEstatica
               v_sim(k) = BateriaDinamica.p_voltage_dynamic(bateria_est, phi, i, i12, i22, rsc, rint, r1, r2, tp);
             end
             close all;
-            figure();
+            
+            %% IMG OPTIONS
+            set(groot,'defaultLineLineWidth',1.5);
+            set(gcf,'PaperPositionMode','auto');
+            set(gca,'FontSize',8);
+            colormap('jet');
+            s100 = [0, 0, 390, 390 * .75];
+            s80 = s100 .* .8;
+            s60 = s100 .* .6;
+            s40 = s100 .* .4;
+            s45 = s100 .* .45;
+            resolucion = s80;
+            fig = figure('Units', 'points', 'Position', resolucion);
             hold on;
+            grid on;
+            box on;
+            hold on;
+            xlabel("t [s]");
+            ylabel("V [V]");
             plot(v_sim, "DisplayName", "Simulated");
             plot(v_exp, "DisplayName", "Experimental");
             legend();
+            outname = "Figuras/DIN";
+            %out = strcat(outname, ".fig");
+            %savefig(fig, out);
+            out = strcat(outname, ".eps");
+            print(fig, out, '-depsc', '-r0');
             fer = bateria_est.p_rmsd(v_exp, v_sim, ones(length(v_exp), 1));
         end
     end

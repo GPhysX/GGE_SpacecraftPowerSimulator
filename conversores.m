@@ -1,6 +1,6 @@
 close all
 clc
-plots = true;
+plots = false;
 
 %% Conversor 5V
 a = load("data/conversor_5V.dat", "-ascii");

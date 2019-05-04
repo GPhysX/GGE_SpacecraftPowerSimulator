@@ -181,9 +181,9 @@ classdef BateriaEstatica
               v2 = v2((head_trim+1):(end-tail_trim));
               w2 = ones(length(t2),1) * n_i;
               %% WARNING
-              w2(round(90e-2 * length(t2)):length(t2)) = n_i * 1e-4;
+              w2(round(90e-2 * length(t2)):length(t2)) = n_i * 1e-6;
               w2(round(40e-2 * length(t2)):round(60e-2 * length(t2))) = n_i * 1e-2;
-              w2(round(40e-2 * length(t2)):round(60e-2 * length(t2))) = n_i * 1e-2;
+              w2(1:round(5e-2 * length(t2))) = n_i * 1e-4;
               
               [p12, p22] = Bateria().get_phies (t2, i2, v2);
               
@@ -507,39 +507,81 @@ classdef BateriaEstatica
           v_c = e_c + i * obj.r_c;
       end
       
-      function obj = adjust_charge(obj, archivo, t)
-          a = Bateria().datos_carga_a_vector(archivo, 3, 3);
+%       function obj = adjust_charge(obj, archivo, t)
+%           a = Bateria().datos_carga_a_vector(archivo, 3, 3);
+%           %t_vec = a(:,1);
+%           i_vec = a(:,2);
+%           v_vec = a(:,3);
+%           phi1_vec = a(:,4);
+%           phi2_vec = a(:,5);
+%           pesos = a(:,6);
+%                     
+%           ff = @(u) obj.p_rmsd_charge_voltage(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u, u(end), obj.phi_max, t);
+%           
+%           if ( t == 1 )
+%             lb = [0e0, 0e0, 0e0];
+%             ub = [1e3, 1e0, 1e3];
+%             u0 = [0e0, 1e0, 0e0];
+%           elseif ( t == 2 )
+%             obj = obj.adjust_charge(archivo, 1);
+%             lb = [0e0, 0e0, 0e0, -1e2, 0e0];
+%             ub = [1e3, 1e0, 1e0,  1e2, 1e3];
+%             u0 = [obj.coeficientes_carga_tipo1, 1e-8, 1e-4, obj.r_c];
+%           else
+%             obj = obj.adjust_charge(archivo, 2);
+%             lb = [0e0, 0e0, 0e0, -1e2, -1e2, 0e0];
+%             ub = [1e3, 1e0, 1e0,  1e2,  1e2, 1e3];
+%             u0 = [obj.coeficientes_carga_tipo2(1:3), obj.coeficientes_carga_tipo2(4)/2e0, obj.coeficientes_carga_tipo2(4)/1e1, obj.r_c];
+%           end
+%           
+%           [u, fer] = fmincon(ff, u0,[],[],[],[],lb,ub);
+%           
+%           disp(fer);
+%           
+%           %phis = obj.phi_max - phi1_vec + u(3)*phi2_vec;
+%           %scatter(phis, u(1) + u(2) * phis + u(3) .* i_vec );
+%           
+%           if ( t == 1 )
+%             obj.coeficientes_carga_tipo1 = u(1:2);
+%             obj.r_c = u(3);
+%           elseif ( t == 2 )
+%             obj.coeficientes_carga_tipo2 = u(1:4);
+%             obj.r_c = u(5);
+%           else
+%             obj.coeficientes_carga_tipo3 = u(1:5);
+%             obj.r_c = u(6);
+%           end
+%       end
+
+    function obj = adjust_charge(obj, archivo, t)
+          a = Bateria().datos_carga_a_vector(archivo, 0, 0);
           %t_vec = a(:,1);
           i_vec = a(:,2);
           v_vec = a(:,3);
           phi1_vec = a(:,4);
           phi2_vec = a(:,5);
           pesos = a(:,6);
-                    
+          
           ff = @(u) obj.p_rmsd_charge_voltage(pesos, v_vec, i_vec, phi1_vec, phi2_vec, u, u(end), obj.phi_max, t);
           
           if ( t == 1 )
-            lb = [0e0, 0e0, 0e0];
-            ub = [1e3, 1e0, 1e3];
-            u0 = [0e0, 1e0, 0e0];
+            %lb = [0e0, 0e0, 0e0];
+            %ub = [1e3, 1e0, 1e3];
+            u0 = [12e0, 1e-5, 1e-2];
           elseif ( t == 2 )
             obj = obj.adjust_charge(archivo, 1);
-            lb = [0e0, 0e0, 0e0, -1e2, 0e0];
-            ub = [1e3, 1e0, 1e0,  1e2, 1e3];
-            u0 = [obj.coeficientes_carga_tipo1, 1e-8, 1e-4, obj.r_c];
+            %lb = [0e0, 0e0, 0e0, -1e2, 0e0];
+            %ub = [1e3, 1e0, 1e0,  1e2, 1e3];
+            u0 = [obj.coeficientes_carga_tipo1, 1e-14, 1e-3, obj.r_c];
           else
             obj = obj.adjust_charge(archivo, 2);
-            lb = [0e0, 0e0, 0e0, -1e2, -1e2, 0e0];
-            ub = [1e3, 1e0, 1e0,  1e2,  1e2, 1e3];
+            %lb = [0e0, 0e0, 0e0, -1e2, -1e2, 0e0];
+            %ub = [1e3, 1e0, 1e0,  1e2,  1e2, 1e3];
             u0 = [obj.coeficientes_carga_tipo2(1:3), obj.coeficientes_carga_tipo2(4)/2e0, obj.coeficientes_carga_tipo2(4)/1e1, obj.r_c];
           end
-          
-          [u, fer] = fmincon(ff, u0,[],[],[],[],lb,ub);
-          
-          disp(fer);
-          
-          %phis = obj.phi_max - phi1_vec + u(3)*phi2_vec;
-          %scatter(phis, u(1) + u(2) * phis + u(3) .* i_vec );
+          %[u, fer] = fmincon(ff, u0,[],[],[],[],lb,ub);
+          options = optimset("Display", "iter", "Tolx", 1e-6, "Tolfun", 1e-6);
+          u = fminsearch(ff, u0, options);          
           
           if ( t == 1 )
             obj.coeficientes_carga_tipo1 = u(1:2);
