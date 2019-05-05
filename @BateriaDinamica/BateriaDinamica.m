@@ -44,7 +44,7 @@ classdef BateriaDinamica < BateriaEstatica
             f(3) = (i - i22) / (r2 * c2);
         end
         
-        function fer = minimize_dynamic_model(u, time, i_exp, v_exp, bateria_est, tp)
+        function fer = minimize_dynamic_model(u, time, i_exp, v_exp, bateria_est, tp, do_plot)
             rsc = u(1);
             rint = u(2);
             r1 = u(3);
@@ -73,42 +73,45 @@ classdef BateriaDinamica < BateriaEstatica
               i = i_interp.eval(time(k));
               v_sim(k) = BateriaDinamica.p_voltage_dynamic(bateria_est, phi, i, i12, i22, rsc, rint, r1, r2, tp);
             end
-            close all;
             
-            %% IMG OPTIONS
-            set(groot,'defaultLineLineWidth',1.5);
-            set(gcf,'PaperPositionMode','auto');
-            set(gca,'FontSize',8);
-            colormap('jet');
-            s100 = [0, 0, 390, 390 * .75];
-            s80 = s100 .* .8;
-            s60 = s100 .* .6;
-            s40 = s100 .* .4;
-            s45 = s100 .* .45;
-            resolucion = s80;
-            fig = figure('Units', 'points', 'Position', resolucion);
-            hold on;
-            grid on;
-            box on;
-            hold on;
-            xlabel("t [s]");
-            ylabel("V [V]");
-            plot(v_sim, "DisplayName", "Simulated");
-            plot(v_exp, "DisplayName", "Experimental");
-            legend();
-            outname = "Figuras/DIN";
-            %out = strcat(outname, ".fig");
-            %savefig(fig, out);
-            out = strcat(outname, ".eps");
-            print(fig, out, '-depsc', '-r0');
             fer = bateria_est.p_rmsd(v_exp, v_sim, ones(length(v_exp), 1));
+            
+            if ( do_plot )
+              %% IMG OPTIONS
+              set(groot,'defaultLineLineWidth',1.5);
+              set(gcf,'PaperPositionMode','auto');
+              set(gca,'FontSize',8);
+              colormap('jet');
+              s100 = [0, 0, 390, 390 * .75];
+              s80 = s100 .* .8;
+              s60 = s100 .* .6;
+              s40 = s100 .* .4;
+              s45 = s100 .* .45;
+              resolucion = s80;
+              fig = figure('Units', 'points', 'Position', resolucion);
+              hold on;
+              grid on;
+              box on;
+              hold on;
+              xlabel("t [s]");
+              ylabel("V [V]");
+              plot(v_sim, "DisplayName", "Simulated");
+              plot(v_exp, "DisplayName", "Experimental");
+              legend();
+              outname = "Figuras/DIN";
+              %out = strcat(outname, ".fig");
+              %savefig(fig, out);
+              out = strcat(outname, ".eps");
+              print(fig, out, '-depsc', '-r0');
+              close(fig);
+            end
         end
     end
   
     methods
     %% CONSTRUCTOR
       function obj = BateriaDinamica(bateria_est)
-        obj@BateriaEstatica(bateria_est.s, bateria_est.p); 
+        %obj@BateriaEstatica(bateria_est.s, bateria_est.p); 
         obj.r_c = bateria_est.r_c;
         obj.r_d = bateria_est.r_d;
         obj.phi_max = bateria_est.phi_max;
@@ -155,9 +158,11 @@ classdef BateriaDinamica < BateriaEstatica
           iE = a(:,3);
           
           u0 = [+2.1e-2, +1.1e-2, +1.5e-2, +6.2e-3, +1.5e+3, +2.6e+3];
-          options = optimset('Display', 'iter', 'MaxFunEvals', 100);
-          f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj, t);
+          options = optimset('Display', 'iter', 'MaxFunEvals', 50);
+          f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj, t, false);
           x = fminsearch(f,u0,options);
+          f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj, t, true);
+          f(x);
           
           obj.r_sc = x(1);
           obj.r_int = x(2);

@@ -76,6 +76,7 @@ classdef Examples
     
     function [bateria] = ex_bateria_ajuste ()
       %% IMG OPTIONS
+      do_plot = false;
       set(groot,'defaultLineLineWidth',1.5);
       set(gcf,'PaperPositionMode','auto');
       set(gca,'FontSize',8);
@@ -88,7 +89,7 @@ classdef Examples
       resolucion = s80;
       
       %% INIT
-      bateria = BateriaEstatica(3, 1);
+      bateria = BateriaEstatica();
       
       %% ADJUST & PLOT
         
@@ -101,62 +102,63 @@ classdef Examples
         bateria.r_d
         bateria.r_c
         
-        %% PLOT DISCHARGE
+        if ( do_plot )
+          %% PLOT DISCHARGE
 
-        tabla = bateria.datos_carga_a_vector("data/ensayos_modulo_3s1p_descarga.dat", 10, 10);
-        phi2 = tabla(:,4) + bateria.r_d * tabla(:,5);
-        phi = linspace(0e0, max(phi2), 20);
-        v_vec = tabla(:,3);
+          tabla = bateria.datos_carga_a_vector("data/ensayos_modulo_3s1p_descarga.dat", 0, 0);
+          phi2 = tabla(:,4) + bateria.r_d * tabla(:,5);
+          phi = linspace(0e0, max(phi2), 20);
+          v_vec = tabla(:,3);
 
-        fig = figure('Units', 'points', 'Position', resolucion);  hold on;
-        grid on;
-        box on;
-        hold on;
-        xlabel("\phi [C \cdot V]");
-        ylabel("V^d [V]");
-        scatter(phi2,v_vec,".");
-        plot(phi, bateria.discharge_voltage(phi, 5e0, tp), "r-x");
-        plot(phi, bateria.discharge_voltage(phi, 2.5e0, tp), "r-+");
-        plot(phi, bateria.discharge_voltage(phi, 1.5e0, tp), "rd-");
-        legends = ["Experimental", "I = 5,0 A", "I = 2,5 A", "I = 1,5 A"];
-        legend(legends);
-        outname = strcat("Figuras/ED", num2str(tp));
-        %out = strcat(outname, ".fig");
-        %savefig(fig, out);
-        out = strcat(outname, ".eps");
-        print(fig, out, '-depsc', '-r0');
-        
-        %% PLOT CHARGE
-        
-        tabla = bateria.datos_carga_a_vector("data/ensayos_modulo_3s1p_carga.dat", 10, 10);
-        phi2 = bateria.phi_max - tabla(:,4) + bateria.r_c * tabla(:,5);
-        phi = linspace(0e0, bateria.phi_max, 20);
-        v_vec = tabla(:,3);
-        
-        fig = figure('Units', 'points', 'Position', resolucion);  hold on;
-        grid on;
-        box on;
-        hold on;
-        xlabel("\phi [C \cdot V]");
-        ylabel("V^c [V]");
-        scatter(phi2,v_vec,".");
-        plot(phi, bateria.charge_voltage(phi, 5e0, tp), "r-x");
-        plot(phi, bateria.charge_voltage(phi, 2.5e0, tp), "r-+");
-        plot(phi, bateria.charge_voltage(phi, 1.5e0, tp), "rd-");
-        legends = ["Experimental", "I = 5,0 A", "I = 2,5 A", "I = 1,5 A"];
-        legend(legends);
-        outname = strcat("Figuras/EC", num2str(tp));
-        %out = strcat(outname, ".fig");
-        %savefig(fig, out);
-        out = strcat(outname, ".eps");
-        print(fig, out, '-depsc', '-r0');
-        
+          fig = figure('Units', 'points', 'Position', resolucion);  hold on;
+          grid on;
+          box on;
+          hold on;
+          xlabel("\phi [C \cdot V]");
+          ylabel("V^d [V]");
+          scatter(phi2,v_vec,".");
+          plot(phi, bateria.discharge_voltage(phi, 5e0, tp), "r-x");
+          plot(phi, bateria.discharge_voltage(phi, 2.5e0, tp), "r-+");
+          plot(phi, bateria.discharge_voltage(phi, 1.5e0, tp), "rd-");
+          legends = ["Experimental", "I = 5,0 A", "I = 2,5 A", "I = 1,5 A"];
+          legend(legends);
+          outname = strcat("Figuras/ED", num2str(tp));
+          %out = strcat(outname, ".fig");
+          %savefig(fig, out);
+          out = strcat(outname, ".eps");
+          print(fig, out, '-depsc', '-r0');
+
+          %% PLOT CHARGE
+
+          tabla = bateria.datos_carga_a_vector("data/ensayos_modulo_3s1p_carga.dat", 10, 10);
+          phi2 = bateria.phi_max - tabla(:,4) + bateria.r_c * tabla(:,5);
+          phi = linspace(0e0, bateria.phi_max, 20);
+          v_vec = tabla(:,3);
+
+          fig = figure('Units', 'points', 'Position', resolucion);  hold on;
+          grid on;
+          box on;
+          hold on;
+          xlabel("\phi [C \cdot V]");
+          ylabel("V^c [V]");
+          scatter(phi2,v_vec,".");
+          plot(phi, bateria.charge_voltage(phi, 5e0, tp), "r-x");
+          plot(phi, bateria.charge_voltage(phi, 2.5e0, tp), "r-+");
+          plot(phi, bateria.charge_voltage(phi, 1.5e0, tp), "rd-");
+          legends = ["Experimental", "I = 5,0 A", "I = 2,5 A", "I = 1,5 A"];
+          legend(legends);
+          outname = strcat("Figuras/EC", num2str(tp));
+          %out = strcat(outname, ".fig");
+          %savefig(fig, out);
+          out = strcat(outname, ".eps");
+          print(fig, out, '-depsc', '-r0');
+        end
       end
 
       %% DYNAMIC
-      bateria = bateria.change_series(6);
       bateria = BateriaDinamica(bateria);
       bateria = bateria.adjust_dynamic("data/medidas_bateria.dat", 3);
+      bateria = ModuloBaterias(1,1,bateria);
     end
   end
   

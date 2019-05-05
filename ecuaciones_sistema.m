@@ -44,7 +44,7 @@ p_sys = p_bus + p_inp_1;
 
 %% Disconnect Battery
 p_bat = p_ps - p_sys;
-if ( p_ps > 1e-3 )
+if ( p_bat > 1e-3 )
     % Paneles Solares funcionando.
     if ( phi < 0e0 )
         % Bateria cargada, desconectarla.
@@ -53,13 +53,18 @@ if ( p_ps > 1e-3 )
 end
 
 %% Solve I_BAT
-
+if ( abs(p_bat) > 39 )
+  ;
+end
+if ( abs(p_bus) > 39 )
+  ;
+end
 ff = @(x) p_bat + x * bateria.voltage_dynamic(phi, x, 3);
 i_c = fzero(ff, -p_bat / bateria.coeficientes_descarga_tipo3(1));
 e_p = bateria.voltage_dynamic(phi, i_c, 3);
 
 %% Set dU/dt Data
-f(1) = i_c * bateria.battery_voltage_static(phi, i_c, 3);
+f(1) = i_c / bateria.p * bateria.battery_voltage_static(phi, i_c / bateria.p, 3);
 f(2) = (i_c - ir1) / (bateria.r_1 * bateria.c_1);
 f(3) = (i_c - ir2) / (bateria.r_2 * bateria.c_2);
 
