@@ -2,6 +2,8 @@ close all
 clc
 conversores
 do_plots = true;
+bateria.s = 2;
+bateria.p = 3;
 
 global i_5 i_33 i_p15 i_m15 i_bus i_ps i_c e_p
 global ic1i ic2i ic3i ic1o ic2o ic3o

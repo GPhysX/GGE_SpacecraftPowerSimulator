@@ -52,6 +52,7 @@ for kk = s:s
   hold on;
   xlabel("t/t_P [-]");
   ylabel("I [A]");
+  title("Intensidades de corriente y tensión de batería");
   xticks(0:2.5:15);
   %title(["Simulación de la corriente", "y tensión de la batería"]);
   % %rigths = [3,4];
@@ -85,6 +86,7 @@ for kk = s:s
   hold on;
   xlabel("t/t_P [-]");
   ylabel("I [A]");
+  title(["Intensidades de corriente de", "elementos principales"]);
   xticks(0:2.5:15);
   plot(vec_t(plot_range,kk) / p, vec_i_ps(plot_range,kk));
   plot(vec_t(plot_range,kk) / p, vec_i_bus(plot_range,kk));

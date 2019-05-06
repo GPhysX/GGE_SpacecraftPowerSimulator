@@ -93,6 +93,7 @@ classdef BateriaDinamica < BateriaEstatica
               grid on;
               box on;
               hold on;
+              title("Ajuste del modelo dinámico");
               xlabel("t [s]");
               ylabel("V [V]");
               plot(v_sim, "DisplayName", "Simulated");
@@ -151,18 +152,41 @@ classdef BateriaDinamica < BateriaEstatica
           v_din = v_int - obj.i_r1 * obj.r_1 - obj.i_r2 * obj.r_2;
       end
 
-      function obj = adjust_dynamic(obj, archivo, t)
+      function obj = adjust_dynamic(obj, archivo, t, do_print, do_plot)
+        if ( nargin <= 3 )
+          do_print = false;
+          do_plot = false;
+        elseif ( nargin == 4 )
+          if ( do_print == [] )
+            do_print = false;
+          end
+        else
+          if ( do_print == [] )
+            do_print = false;
+          end
+          if ( do_plot == [] )
+            do_plot = false;
+          end
+        end
           a = load(archivo);
           tE = a(:,1);
           vE = a(:,2);
           iE = a(:,3);
           
           u0 = [+2.1e-2, +1.1e-2, +1.5e-2, +6.2e-3, +1.5e+3, +2.6e+3];
-          options = optimset('Display', 'iter', 'MaxFunEvals', 50);
+          
+          if ( do_print )
+            options = optimset('Display', 'iter', 'MaxFunEvals', 50);
+          else
+            options = optimset('MaxFunEvals', 50);
+          end
+          
           f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj, t, false);
           x = fminsearch(f,u0,options);
-          f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj, t, true);
-          f(x);
+          if ( do_plot )
+            f = @(u) obj.minimize_dynamic_model(u, tE, iE, vE, obj, t, true);
+            f(x);
+          end
           
           obj.r_sc = x(1);
           obj.r_int = x(2);
@@ -170,28 +194,15 @@ classdef BateriaDinamica < BateriaEstatica
           obj.r_2 = x(4);
           obj.c_1 = x(5);
           obj.c_2 = x(6);
+          
+          if ( do_print )
+            disp(strcat("R_SC = ", num2str(x(1))));
+            disp(strcat("R_INT = ", num2str(x(2))));
+            disp(strcat("R_1 = ", num2str(x(3))));
+            disp(strcat("R_2 = ", num2str(x(4))));
+            disp(strcat("C_1 = ", num2str(x(5))));
+            disp(strcat("C_2 = ", num2str(x(6))));
+          end
       end
-      
-%       function v_estatico = modelo_dinamico(obj, t, i, v, r_1, r_2)
-%           phi0 = 0e0;
-%           [phi1, phi2] = obj.get_phies (t, i, v);
-%           e_d = obj.voltaje_pila_descarga(phi0 + phi1 * obj.r_d + phi2, i);
-%           e_c = obj.voltaje_pila_carga(phi0 - phi1 * obj.r_c + phi2, i);
-%           de = e_c - e_d;
-%           dr = obj.r_c - obj.r_d;
-%           v_estatico = e_d + (1e0 - sign(i)) / 2e0 * (de - dr * i) - (obj.r_d - r_1 -r_2) * i;
-%       end
-%       
-%       function v_estatico = modelo_estatico(obj, phi, i, r_1, r_2)
-%           if sign(i) > 0e0
-%               e_d = obj.voltaje_pila_descarga(phi, i);
-%               r = obj.r_d - r_1 - r_2;
-%               v_estatico = e_d - r * i;
-%           else
-%               e_c = obj.voltaje_pila_carga(phi, abs(i));
-%               r = obj.r_c - r_1 - r_2;
-%               v_estatico = e_c + r * i;
-%           end
-%       end
     end
 end

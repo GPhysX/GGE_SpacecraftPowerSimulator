@@ -1,27 +1,3 @@
-% ## Copyright (C) 2019 imanol
-% ## 
-% ## This program is free software; you can redistribute it and/or modify it
-% ## under the terms of the GNU General Public License as published by
-% ## the Free Software Foundation; either version 3 of the License, or
-% ## (at your option) any later version.
-% ## 
-% ## This program is distributed in the hope that it will be useful,
-% ## but WITHOUT ANY WARRANTY; without even the implied warranty of
-% ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% ## GNU General Public License for more details.
-% ## 
-% ## You should have received a copy of the GNU General Public License
-% ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-% 
-% ## -*- texinfo -*- 
-% ## @deftypefn {Function File} {@var{retval} =} Examples (@var{input1}, @var{input2})
-% ##
-% ## @seealso{}
-% ## @end deftypefn
-% 
-% ## Author: imanol <imanol@debian>
-% ## Created: 2019-03-26
-
 classdef Examples
   properties
     name
@@ -75,17 +51,18 @@ classdef Examples
     end
     
     function [bateria] = ex_bateria_ajuste ()
+      do_print = true;
       %% IMG OPTIONS
-      do_plot = false;
+      do_plot = true;
       set(groot,'defaultLineLineWidth',1.5);
       set(gcf,'PaperPositionMode','auto');
       set(gca,'FontSize',8);
       colormap('jet');
       s100 = [0, 0, 390, 390 * .75];
       s80 = s100 .* .8;
-      s60 = s100 .* .6;
-      s40 = s100 .* .4;
-      s45 = s100 .* .45;
+      %s60 = s100 .* .6;
+      %s40 = s100 .* .4;
+      %s45 = s100 .* .45;
       resolucion = s80;
       
       %% INIT
@@ -95,12 +72,8 @@ classdef Examples
         
       for tp = 1:3
         
-        bateria = bateria.adjust_discharge("data/ensayos_modulo_3s1p_descarga.dat", tp);
-        bateria = bateria.adjust_charge("data/ensayos_modulo_3s1p_carga.dat", tp);
-        
-        tp
-        bateria.r_d
-        bateria.r_c
+        bateria = bateria.adjust_discharge("data/ensayos_modulo_3s1p_descarga.dat", tp, do_print);
+        bateria = bateria.adjust_charge("data/ensayos_modulo_3s1p_carga.dat", tp, do_print);
         
         if ( do_plot )
           %% PLOT DISCHARGE
@@ -117,6 +90,13 @@ classdef Examples
           xlabel("\phi [C \cdot V]");
           ylabel("V^d [V]");
           scatter(phi2,v_vec,".");
+          if ( tp == 1 )
+            title(["Ajuste del modelo de descarga", "tipo I"]);
+          elseif ( tp == 2 )
+            title(["Ajuste del modelo de descarga", "tipo II"]);
+          else
+            title(["Ajuste del modelo de descarga", "tipo III"]);
+          end
           plot(phi, bateria.discharge_voltage(phi, 5e0, tp), "r-x");
           plot(phi, bateria.discharge_voltage(phi, 2.5e0, tp), "r-+");
           plot(phi, bateria.discharge_voltage(phi, 1.5e0, tp), "rd-");
@@ -142,6 +122,13 @@ classdef Examples
           xlabel("\phi [C \cdot V]");
           ylabel("V^c [V]");
           scatter(phi2,v_vec,".");
+          if ( tp == 1 )
+            title(["Ajuste del modelo de carga", "tipo I"]);
+          elseif ( tp == 2 )
+            title(["Ajuste del modelo de carga", "tipo II"]);
+          else
+            title(["Ajuste del modelo de carga", "tipo III"]);
+          end
           plot(phi, bateria.charge_voltage(phi, 5e0, tp), "r-x");
           plot(phi, bateria.charge_voltage(phi, 2.5e0, tp), "r-+");
           plot(phi, bateria.charge_voltage(phi, 1.5e0, tp), "rd-");
@@ -157,7 +144,7 @@ classdef Examples
 
       %% DYNAMIC
       bateria = BateriaDinamica(bateria);
-      bateria = bateria.adjust_dynamic("data/medidas_bateria.dat", 3);
+      bateria = bateria.adjust_dynamic("data/medidas_bateria.dat", 3, do_print, do_plot);
       bateria = ModuloBaterias(1,1,bateria);
     end
   end
