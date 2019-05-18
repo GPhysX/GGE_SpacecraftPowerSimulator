@@ -7,6 +7,7 @@ classdef Satelite
         actitud
         paneles
         orientacion_paneles
+        bateria
         nombre_orientaciones = ["XM", "XP", "YM", "YP", "ZM", "ZP"];
     end
     
@@ -19,7 +20,7 @@ classdef Satelite
             else
                 obj.nombre = 'Satelite';
             end
-            panel_vacio = PanelSolar();
+            panel_vacio = [];%PanelSolar();
             obj.paneles = struct(...
                 "XM", panel_vacio, ...
                 "XP", panel_vacio, ...
@@ -59,7 +60,9 @@ classdef Satelite
             %rotar Rotar el satelite alrededor de un eje.
             
             q = Actitud.cuaternionRotacionI(theta, eje);
-            obj.actitud = obj.actitud.rotacionPorCuaternion(q);
+            act = obj.actitud;
+            act = act.rotacionPorCuaternion(q);
+            obj.actitud = act;
         end
         %% ORBITAS
         function obj = inicializarOrbitaTerrestre(obj, sma, ecc, inc, raan, aop, ta)

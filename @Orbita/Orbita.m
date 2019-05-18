@@ -43,7 +43,9 @@ classdef Orbita
             precesion = raan;
             nutacion = inc;
             rotacion = aop + ta;
-            obj.ejes_inerciales =  Actitud().rotacionPorEuler(-precesion, -nutacion, -rotacion);
+            actitud = Actitud();
+            actitud = actitud.rotacionPorEuler(-precesion, -nutacion, -rotacion);
+            obj.ejes_inerciales =  actitud;
             
             if(nargin >= 9)
                 obj.albedo = albedo;

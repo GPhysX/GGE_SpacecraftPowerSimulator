@@ -147,6 +147,70 @@ classdef Examples
       bateria = bateria.adjust_dynamic("data/medidas_bateria.dat", 3, do_print, do_plot);
       bateria = ModuloBaterias(1,1,bateria);
     end
+    
+    function [panel] = ex_simulacion_panel ()
+      %% PANEL
+      %% Datos del datasheet
+      s = 7;
+      p = 2;
+      v_oc_cell = 2667e-3;
+      dvoc_dt_cell = -6e-3;
+      i_sc_cell = 506e-3;
+      disc_dt_cell = 0.32e-3;
+      v_mp_cell = 2371e-3;
+      i_mp_cell = 487e-3;
+      dvmp_dt_cell = -6.1e-3;
+      dimp_dt_cell = 0.28e-3;
+      t_ref = 300e0;
+      e_ref = 1367e0;
+      %% Panel
+      panel = PanelSolar( ...
+        s, ...
+        p, ...
+        v_oc_cell, ...
+        i_sc_cell, ... 
+        v_mp_cell, ...
+        i_mp_cell, ...
+        dvoc_dt_cell, ...
+        disc_dt_cell, ...
+        dvmp_dt_cell, ...
+        dimp_dt_cell, ...
+        t_ref, ...
+        e_ref);
+      panel.adjust(t_ref, e_ref);
+    end
+    
+    function [orbita, periodo] = ex_simulacion_orbita ()
+      mu_t = 3.986e5;
+      rp_t = 6378e0;
+      h = 500;
+      sma = rp_t + h;
+      ecc = 0e0;
+      inc = 98.4;
+      raan = 45e0;
+      aop = 0e0;
+      ta_0 = 0e0;
+      albedo = 0.30;
+      eps = 0.6;
+      t_p = 288e0;
+      orbita = Orbita(mu_t, rp_t, sma, ecc, inc, raan, aop, ta_0, albedo, eps, t_p);
+      periodo = 2e0 * pi * sqrt(sma ^ 3e0 / mu_t);
+    end
+    
+    function [panel, orbita, periodo, bateria, satelite] = ex_simulacion ()
+      panel = Examples.ex_simulacion_panel();
+      [orbita, periodo] = Examples.ex_simulacion_orbita();
+      bateria = Examples.ex_bateria_ajuste();
+      satelite = Satelite("DeathStar");
+      satelite.orbita = orbita;
+      satelite = satelite.ponerPanel(panel, 1);
+      satelite = satelite.ponerPanel(panel, 2);
+      satelite = satelite.ponerPanel(panel, 3);
+      satelite = satelite.ponerPanel(panel, 4);
+      satelite = satelite.ponerPanel(panel, 5);
+      satelite = satelite.ponerPanel(panel, 6);
+      
+    end
   end
   
   methods(Static = false)
