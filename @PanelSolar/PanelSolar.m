@@ -173,4 +173,3 @@ classdef PanelSolar
     end
   end
 end
-
