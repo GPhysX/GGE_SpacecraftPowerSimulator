@@ -22,18 +22,21 @@ else
   bateria.s = 1;
   bateria.p = 2;
   satelite.bateria = bateria;
-  n = 8000;
+  dt = 20e0;
   t0 = 0e0;
   tf = 24e0 * 60e0 * 60e0;
+  tf = 90 * 6e1;
+  n = int8((tf-t0)/dt);%8000;
   ts = linspace(t0, tf, n);
-  dt = (tf - t0) / n;
+  %dt = (tf - t0) / n;
+  tas = 360e0 * ts / periodo;
+  
   fxm = zeros(n,1);
   fym = zeros(n,1);
   fzm = zeros(n,1);
   fxp = zeros(n,1);
   fyp = zeros(n,1);
   fzp = zeros(n,1);
-  tas = 360e0 * ts / periodo;
   phi = zeros(n,1);
   ir1 = zeros(n,1);
   ir2 = zeros(n,1);
@@ -43,6 +46,7 @@ else
   pwr = zeros(n,1);
   pps = zeros(n,1);
   pbt = zeros(n,1);
+  
   i = 1;
   for t = ts(1:(length(ts)-1))
     %% AJUSTES DE TIEMPO
@@ -54,7 +58,7 @@ else
     ta = 360e0 * t / periodo;
     satelite = satelite.cambiarAnomaliaVerdadera(ta);
     dtheta = omega * dt;
-    satelite = satelite.rotar(theta, 1);
+    satelite = satelite.rotar(dtheta, 1);
     temp = simulacion_temperatura(ta);
     pwr_i = simulacion_potencia(ta, periodo);
     pwr(i) = pwr_i;
@@ -117,32 +121,6 @@ else
     %% PORCENTAJE SIM.
     disp(strcat(num2str(1e2 * t / ts(length(ts)-1), 5), " %"));
   end
-%   nu_pre_eclipse = 0e0;
-%   nu_pos_eclipse = 0e0;
-%   eclipse = false;
-%   for i = 1:(n-1)
-%     dta = tas(i+1) - tas(i);
-%     dt = periodo / n;
-%     t = i * dt;
-%     satelite = satelite.aumentarAnomaliaVerdadera(dta);
-%     theta = - omega * dt;
-%     satelite = satelite.rotar(theta, 1);
-%     fe = satelite.factorEclipse(n_sol_i);
-%     fxm(i+1) = fe*satelite.cosenoPanel(n_sol_i, 3);
-%     fym(i+1) = fe*satelite.cosenoPanel(n_sol_i, 5);
-%     fzm(i+1) = fe*satelite.cosenoPanel(n_sol_i, 1);
-%     fxp(i+1) = fe*satelite.cosenoPanel(n_sol_i, 4);
-%     fyp(i+1) = fe*satelite.cosenoPanel(n_sol_i, 6);
-%     fzp(i+1) = fe*satelite.cosenoPanel(n_sol_i, 2);
-%     if ( fe == 0 && ~eclipse )
-%       nu_pre_eclipse = tas(i+1);
-%       eclipse = true;
-%     end
-%     if ( fe == 1 && eclipse )
-%       nu_pos_eclipse = tas(i+1);
-%       eclipse = false;
-%     end
-%  end
 
 %% GRAFICAS
 %% FV
