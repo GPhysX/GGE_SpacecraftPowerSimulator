@@ -3,10 +3,10 @@ function f = simulacion_sistema(v, i_ps, i_bat, temp, es, pwr, phi, satelite)
 %   Detailed explanation goes here
 f = zeros(3, 1);
 ips = zeros(6, 1);
-ips(1) = satelite.paneles.XM.corriente_d1r2(v, temp, es(1));
+ips(1) = 0e0;%satelite.paneles.XM.corriente_d1r2(v, temp, es(1));
 ips(2) = satelite.paneles.YM.corriente_d1r2(v, temp, es(2));
 ips(3) = satelite.paneles.ZM.corriente_d1r2(v, temp, es(3));
-ips(4) = satelite.paneles.XP.corriente_d1r2(v, temp, es(4));
+ips(4) = 0e0;%satelite.paneles.XP.corriente_d1r2(v, temp, es(4));
 ips(5) = satelite.paneles.YP.corriente_d1r2(v, temp, es(5));
 ips(6) = satelite.paneles.ZP.corriente_d1r2(v, temp, es(6));
 

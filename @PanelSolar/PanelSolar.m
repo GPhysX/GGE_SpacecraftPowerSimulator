@@ -22,6 +22,7 @@ classdef PanelSolar
     gamma
     m
     param_d1r2
+    solveroptions_d1r2
   end
   
   methods
@@ -48,6 +49,7 @@ classdef PanelSolar
       obj.v_oc = v_oc_cell * s;         % V
       obj.i_mp = i_mp_cell * p;         % A
       obj.v_mp = v_mp_cell * s;         % V
+      obj.solveroptions_d1r2 = optimoptions("fsolve", "Display", "none");
     end
   end
   
@@ -79,7 +81,9 @@ classdef PanelSolar
       d = (v_mp - v_oc) ./ (alf * v_t);
 
       % Parametros del cir. 1D/2R
-      r_s = a .* (lambertw(-1,b.*exp(c)) - (c+d));
+      pp = b .* exp(c);
+      lw = double(lambertw(-1e0, pp));
+      r_s = a .* (lw - c - d);
 
       r_sh_n = (v_mp - i_mp .* r_s) .* (v_mp - r_s .* (i_sc - i_mp) - alf .* v_t);
       r_sh_d = (v_mp - i_mp .* r_s) .* (i_sc - i_mp) - alf .* v_t .* i_mp;
@@ -99,7 +103,7 @@ classdef PanelSolar
       parametros.r_sh = r_sh;
     end
     
-    function cur_out = p_current_d1r2(v, v_oc, i_sc, v_mp, i_mp, t, e, e_ref, n)
+    function cur_out = p_current_d1r2(v, v_oc, i_sc, v_mp, i_mp, t, e, e_ref, n, options)
       p = PanelSolar.p_parametros_diodo(v_oc, i_sc, v_mp, i_mp, t, e, e_ref, n);
       if ( v > v_oc )
         cur_out = 0e0;
@@ -107,10 +111,8 @@ classdef PanelSolar
         cur_out = 0e0;
       else
         f_cur = @(cur) real(p.i_pv - p.i_0 * (exp((v + cur * p.r_s)/p.a/p.v_t)) - (v + cur * p.r_s) / p.r_sh);
-        f_cur(i_sc / 2e0);
-        f_solve = @(x) abs(x - f_cur(x));
-        options = optimoptions("fsolve", "Display", "none");
-        cur_out = fsolve(f_solve, i_sc, options);
+        f_solve = @(x) x - f_cur(x);
+        cur_out = fzero(f_solve, p.i_pv);%, options);
       end
     end
     
@@ -140,7 +142,7 @@ classdef PanelSolar
     end
     
     function cur_out = corriente_d1r2(obj, v, t, e)
-      cur_out = PanelSolar.p_current_d1r2(v, obj.v_oc, obj.i_sc, obj.v_mp, obj.i_mp, t, e, obj.e_ref, obj.s);
+      cur_out = PanelSolar.p_current_d1r2(v, obj.v_oc, obj.i_sc, obj.v_mp, obj.i_mp, t, e, obj.e_ref, obj.s, obj.solveroptions_d1r2);
     end
     
     function obj = parametros_d1r2(obj, t, e)

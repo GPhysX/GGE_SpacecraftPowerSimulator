@@ -2,12 +2,14 @@
 close all
 clc
 
+options = optimoptions("fsolve", "Display", "none");
+
 trabajo = 4;
 ejemplo = Examples();
 
 if ( trabajo == 1 )
   ejemplo.ex_orbita_sunsync();
-  close all;
+  %close all;
 elseif ( trabajo == 2 )
   ejemplo.ex_curvaiv_panelsolar();
   close all;
@@ -17,16 +19,19 @@ elseif ( trabajo == 3 )
 else
   n_sol_i = [1e0, 0e0, 0e0];
   omega = 0.01 * 180e0 / pi;
+  j2 = 1.08263e-3;
   %omega = 0e0;
-  [panel, orbita, periodo, bateria, satelite] = ejemplo.ex_simulacion();
+  if not(exist('panel_p', 'var') & exist('panel_g', 'var') & exist('panel_v', 'var') & exist('orbita', 'var') & exist('periodo', 'var') & exist('bateria', 'var') & exist('satelite', 'var') & exist('cnvs', 'var'))
+    [panel_p, panel_g, panel_v, orbita, periodo, bateria, cnvs, satelite] = ejemplo.ex_simulacion(true);
+  end
   bateria.s = 1;
-  bateria.p = 2;
+  bateria.p = 4;
   satelite.bateria = bateria;
   dt = 20e0;
   t0 = 0e0;
   tf = 24e0 * 60e0 * 60e0;
-  tf = 90 * 6e1;
-  n = int8((tf-t0)/dt);%8000;
+  %tf = 90 * 6e1 * 2;
+  n = int64((tf-t0)/dt);%8000;
   ts = linspace(t0, tf, n);
   %dt = (tf - t0) / n;
   tas = 360e0 * ts / periodo;
@@ -56,11 +61,13 @@ else
     satelite.bateria.i_r1 = ir1_i;
     satelite.bateria.i_r2 = ir2_i;
     ta = 360e0 * t / periodo;
+    delta_omega = -3e0 * pi * j2 * (6378e0 * satelite.orbita.ecc/ satelite.orbita.sma / (1e0 / satelite.orbita.ecc - satelite.orbita.ecc)) ^ 2e0 * cosd(satelite.orbita.inc);
     satelite = satelite.cambiarAnomaliaVerdadera(ta);
+    satelite = satelite.aumentarRAAN(delta_omega);
     dtheta = omega * dt;
     satelite = satelite.rotar(dtheta, 1);
     temp = simulacion_temperatura(ta);
-    pwr_i = simulacion_potencia(ta, periodo);
+    pwr_i = simulacion_potencia(ta, periodo, cnvs);
     pwr(i) = pwr_i;
     
     %% FACTORES DE VISTA
@@ -79,18 +86,17 @@ else
     es(3) = es(3) * fxm_i;
     es(4) = es(4) * fxp_i;
     es(5) = es(5) * fym_i;
-    es(6) = es(6) * fzp_i;
+    es(6) = es(6) * fyp_i;
     
-    satelite.paneles.XM = satelite.paneles.XM.adjust(temp, es(1));
+    %satelite.paneles.XM = satelite.paneles.XM.adjust(temp, es(1));
     satelite.paneles.YM = satelite.paneles.YM.adjust(temp, es(2));
     satelite.paneles.ZM = satelite.paneles.ZM.adjust(temp, es(3));
-    satelite.paneles.XP = satelite.paneles.XP.adjust(temp, es(4));
+    %satelite.paneles.XP = satelite.paneles.XP.adjust(temp, es(4));
     satelite.paneles.YP = satelite.paneles.YP.adjust(temp, es(5));
     satelite.paneles.ZP = satelite.paneles.ZP.adjust(temp, es(6));
     
     %% RESOLVER PROBLEMA
     f_solve = @(u) simulacion_sistema(u(1), u(2), u(3), temp, es, pwr_i, phi_i, satelite);
-    options = optimoptions("fsolve", "Display", "none");
     u = fsolve(f_solve, [12e0, 1e0, 1e0], options);
     v_i = u(1);
     ips_i = u(2);
@@ -123,8 +129,18 @@ else
   end
 
 %% GRAFICAS
+set(groot,'defaultLineLineWidth',1.5);
+set(gcf,'PaperPositionMode','auto');
+set(gca,'FontSize',8);
+colormap('jet');
+s100 = [0, 0, 390, 390 * .75];
+s80 = s100 .* .8;
+%s60 = s100 .* .6;
+%s40 = s100 .* .4;
+%s45 = s100 .* .45;
+resolucion = s80;
 %% FV
-fig = figure();
+fig = figure('Units', 'points', 'Position', resolucion);
 hold on;
 grid on;
 box on;
@@ -138,26 +154,32 @@ plot(tas, fxp, "rx-", "DisplayName", "Fxp");
 plot(tas, fyp, "bd-", "DisplayName", "Fyp");
 plot(tas, fzp, "g+-", "DisplayName", "Fzp");
 legend();
+print(fig, 'Figuras/FV.eps', '-depsc', '-r0');
+
 %% IBT
-fig = figure();
+fig = figure('Units', 'points', 'Position', resolucion);
+hold on;
 grid on;
 box on;
 title("Intensidad de la bateria");
 xlabel("TA [deg]");
 ylabel("I [A]");
 plot(tas, ibt);
+print(fig, 'Figuras/IBT.eps', '-depsc', '-r0');
 
 %% DOD
-fig = figure();
+fig = figure('Units', 'points', 'Position', resolucion);
+hold on;
 grid on;
 box on;
 title("Profundidad de descarga");
 xlabel("TA [deg]");
 ylabel("DoD [%]");
 plot(tas, phi / satelite.bateria.phi_max * 100);
+print(fig, 'Figuras/DOD.eps', '-depsc', '-r0');
 
 %% PWR
-fig = figure();
+fig = figure('Units', 'points', 'Position', resolucion);
 hold on;
 grid on;
 box on;
@@ -168,24 +190,7 @@ plot(tas, pwr, "DisplayName", "EQUIPOS");
 plot(tas, pps, "DisplayName", "PANEL");
 plot(tas, pbt, "DisplayName", "BATERIA");
 legend();
+print(fig, 'Figuras/PWR.eps', '-depsc', '-r0');
 
 %% END
 end
-% bateria.r_1 = bateria.r_d / 3e0;
-% bateria.r_2 = bateria.r_d / 3e0;
-% bateria.c_1 = bateria.r_d / 1e-3;
-% bateria.c_2 = bateria.r_d / 1e-3;
-% bateria.r_int = bateria.r_d / 3e0;
-% 
-% a = load("data/medidas_bateria.dat");
-% tE = a(:,1);
-% vE = a(:,2);
-% iE = a(:,3);
-% 
-% fv = @(phi) bateria.coeficientes_carga_tipo1(1) + bateria.coeficientes_carga_tipo1(2) * phi + bateria.r_c * 5e0;
-% phis = linspace(bateria.phi_max, 0e0, 1000);
-% 
-
-
-%bat = struct(bateria);
-

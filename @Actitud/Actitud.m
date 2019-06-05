@@ -80,6 +80,20 @@ classdef Actitud
             q = Actitud.cuaternionRotacionEuler(precesion, nutacion, rotacion);
             obj = obj.rotacionPorCuaternion(q);
         end
+        
+        function obj = rotacionEje(obj, theta, eje)
+          %rotacionEje Giro en grados sobre un eje principal.
+          if eje == 1
+            qi = Actitud.cuaternionRotacionI(theta, 1);
+            obj = obj.rotacionPorCuaternion(qi);
+          elseif eje == 2
+            qi = Actitud.cuaternionRotacionI(theta, 2);
+            obj = obj.rotacionPorCuaternion(qi);
+          elseif eje == 3
+            qi = Actitud.cuaternionRotacionI(theta, 3);
+            obj = obj.rotacionPorCuaternion(qi);
+          end
         end
+    end
 end
 
