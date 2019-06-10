@@ -1,4 +1,4 @@
-function f = simulacion_sistema(v, i_ps, i_bat, temp, es, pwr, phi, satelite)
+function f = simulacion_sistema(v, i_ps, i_bat, temp, es, pwr, phi, satelite, caso)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 f = zeros(3, 1);
@@ -9,6 +9,12 @@ ips(3) = satelite.paneles.ZM.corriente_d1r2(v, temp, es(3));
 ips(4) = 0e0;%satelite.paneles.XP.corriente_d1r2(v, temp, es(4));
 ips(5) = satelite.paneles.YP.corriente_d1r2(v, temp, es(5));
 ips(6) = satelite.paneles.ZP.corriente_d1r2(v, temp, es(6));
+
+if caso == 1
+  ips(3) = 0e0;
+elseif caso == 3
+  ips(3:6) = 0e0;
+end
 
 ips(ips < 0e0) = 0e0;
 

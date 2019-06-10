@@ -50,7 +50,7 @@ classdef Orbita
             %actitud = actitud.rotacionEje(rotacion, 3);
             
             actitud = actitud.rotacionPorEuler(-precesion, -nutacion, -rotacion);
-            %actitud.x_b;
+            %actitud.x_b
             obj.ejes_inerciales =  actitud;
             
             if(nargin >= 9)

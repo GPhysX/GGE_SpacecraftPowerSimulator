@@ -46,10 +46,12 @@ classdef Actitud
           q3 = [r,x,y,z];
           %q3 = quatmultiply(q1, q2);
         end
-        function q2 = quat_rota(q, v)
+        function w = quat_rota(q, v)
             qp = [q(1), -q(2), -q(3), -q(4)];
-            q2 = Actitud().quat_mult(q, Actitud().quat_mult([0e0, v(1), v(2), v(3)],qp));
-            q2 = [q2(2), q2(3), q2(4)];
+            qv = [0e0, v(1), v(2), v(3)];
+            w = Actitud.quat_mult(qp, Actitud.quat_mult(qv, q));
+            w = [w(2), w(3), w(4)];
+            %w = quatrotate(q, v);
         end
     end
     %% CLASS METHODS
